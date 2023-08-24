@@ -72,14 +72,15 @@ def generate_games(hash_value, num_games):
     for i in range(num_games):
         number = 0
         intversion = int(hashobj.hexdigest()[0:int(52/4)], 16)
-        X = 100 / (1 - (intversion / (2 ** 52)))  # Math.pow(2,52);
-        number = max(1, math.floor(X) / 101)
+        number = max(1, math.floor(100 / (1 - (intversion / (2 ** 52)))) / 101)
         game_results.append({'hash': hash_value, 'result': number})
         hash_value = hashlib.sha256(hash_value.encode()).hexdigest()
-        hashobj = hmac.new(salt, binascii.unhexlify(
-            hash_value), hashlib.sha256)
+        hashobj = hmac.new(salt, binascii.unhexlify(hash_value), hashlib.sha256)
 
     return game_results
+
+def gameResultFromHash(self, hash_value):
+    return generate_games(hash_value, 1)[0]['result']
 
 with JSContext() as ctxt:
     user_info = UserInfo("player1", 1000)  # Example user info
@@ -90,12 +91,11 @@ with JSContext() as ctxt:
     ctxt.exposeFunction("gameResultFromHash", gameResultFromHash)
 
     # Simulating game flow
-    game_id = 1000
     hash_value = "some_hash_value"  # Example hash value
     results = generate_games(hash_value, 50)
 
     for result in results:
-        game_id, _, number, _ = result
+        hash_value, number = result['hash'], result['result']
 
         # GAME_STARTING event
         engine.emit('GAME_STARTING')
@@ -113,4 +113,4 @@ with JSContext() as ctxt:
         # Reset for next game
         engine.current_bet = None
         engine.current_payout = None
-        game_id += 1
+
